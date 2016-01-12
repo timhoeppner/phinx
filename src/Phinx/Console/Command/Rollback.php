@@ -57,6 +57,10 @@ The <info>rollback</info> command reverts the last migration, or optionally up t
 <info>phinx rollback -e development -d 20111018</info>
 <info>phinx rollback -e development -v</info>
 
+The <info>--dry-run</info> option will output the SQL code of the migration(s) which would be rollbacked:
+
+<info>phinx rollback -e development --dry-run</info>
+
 EOT
              );
     }
