@@ -502,4 +502,14 @@ abstract class PdoAdapter implements AdapterInterface
         $this->dryRun = true;
         return $this;
     }
+    
+    /**
+     * Is Dry Run mode enabled?
+     *
+     * @return boolean
+     */
+    public function isDryRun()
+    {
+        return $this->dryRun;
+    }
 }
