@@ -169,10 +169,11 @@ class Manager
      *
      * @param string    $environment Environment
      * @param \DateTime $dateTime    Date to migrate to
+     * @param boolean   $dryRun      Do dry run?
      *
      * @return void
      */
-    public function migrateToDateTime($environment, \DateTime $dateTime)
+    public function migrateToDateTime($environment, \DateTime $dateTime, $dryRun = false)
     {
         $env            = $this->getEnvironment($environment);
         $versions       = array_keys($this->getMigrations());
@@ -203,6 +204,7 @@ class Manager
      *
      * @param string    $environment Environment
      * @param \DateTime $dateTime    Date to roll back to
+     * @param boolean   $dryRun      Do dry run?
      *
      * @return void
      */
@@ -232,9 +234,10 @@ class Manager
      *
      * @param string $environment Environment
      * @param int $version
+     * @param bool $dryRun Do dry run?
      * @return void
      */
-    public function migrate($environment, $version = null)
+    public function migrate($environment, $version = null, $dryRun = false)
     {
         $migrations = $this->getMigrations();
         $env = $this->getEnvironment($environment);
@@ -269,7 +272,7 @@ class Manager
                 }
 
                 if (in_array($migration->getVersion(), $versions)) {
-                    $this->executeMigration($environment, $migration, MigrationInterface::DOWN);
+                    $this->executeMigration($environment, $migration, MigrationInterface::DOWN, $dryRun);
                 }
             }
         }
@@ -281,7 +284,7 @@ class Manager
             }
 
             if (!in_array($migration->getVersion(), $versions)) {
-                $this->executeMigration($environment, $migration, MigrationInterface::UP);
+                $this->executeMigration($environment, $migration, MigrationInterface::UP, $dryRun);
             }
         }
     }
@@ -292,28 +295,41 @@ class Manager
      * @param string $name Environment Name
      * @param MigrationInterface $migration Migration
      * @param string $direction Direction
+     * @param bool $dryRun Do dry run?
      * @return void
      */
-    public function executeMigration($name, MigrationInterface $migration, $direction = MigrationInterface::UP)
+    public function executeMigration($name, MigrationInterface $migration, $direction = MigrationInterface::UP, $dryRun = false)
     {
         $this->getOutput()->writeln('');
-        $this->getOutput()->writeln(
-            ' =='
+
+        $migrationLine = ' =='
             . ' <info>' . $migration->getVersion() . ' ' . $migration->getName() . ':</info>'
-            . ' <comment>' . ($direction === MigrationInterface::UP ? 'migrating' : 'reverting') . '</comment>'
-        );
+            . ' <comment>';
+
+        if ($dryRun) {
+            $migrationLine .= 'dry-running ' . ($direction === MigrationInterface::UP ? 'migration' : 'rollback');
+        }
+        else {
+            $migrationLine .= ($direction === MigrationInterface::UP ? 'migrating' : 'reverting');
+        }
+
+        $migrationLine .= '</comment>';
+        
+        $this->getOutput()->writeln($migrationLine);
 
         // Execute the migration and log the time elapsed.
         $start = microtime(true);
-        $this->getEnvironment($name)->executeMigration($migration, $direction);
+        $this->getEnvironment($name)->executeMigration($migration, $direction, $dryRun);
         $end = microtime(true);
 
-        $this->getOutput()->writeln(
-            ' =='
-            . ' <info>' . $migration->getVersion() . ' ' . $migration->getName() . ':</info>'
-            . ' <comment>' . ($direction === MigrationInterface::UP ? 'migrated' : 'reverted')
-            . ' ' . sprintf('%.4fs', $end - $start) . '</comment>'
-        );
+        if (!$dryRun) {
+            $this->getOutput()->writeln(
+                ' =='
+                . ' <info>' . $migration->getVersion() . ' ' . $migration->getName() . ':</info>'
+                . ' <comment>' . ($direction === MigrationInterface::UP ? 'migrated' : 'reverted')
+                . ' ' . sprintf('%.4fs', $end - $start) . '</comment>'
+            );
+        }
     }
 
     /**
@@ -350,9 +366,10 @@ class Manager
      *
      * @param string $environment Environment
      * @param int $version
+     * @param bool $dryRun Do dry run?
      * @return void
      */
-    public function rollback($environment, $version = null)
+    public function rollback($environment, $version = null, $dryRun = false)
     {
         $migrations = $this->getMigrations();
         $env = $this->getEnvironment($environment);
@@ -396,7 +413,7 @@ class Manager
             }
 
             if (in_array($migration->getVersion(), $versions)) {
-                $this->executeMigration($environment, $migration, MigrationInterface::DOWN);
+                $this->executeMigration($environment, $migration, MigrationInterface::DOWN, $dryRun);
             }
         }
     }
