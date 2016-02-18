@@ -67,6 +67,11 @@ abstract class PdoAdapter implements AdapterInterface
     protected $commandStartTime;
 
     /**
+     * @var boolean
+     */
+    private $dryRun = false;
+
+    /**
      * Class Constructor.
      *
      * @param array $options Options
@@ -294,7 +299,13 @@ abstract class PdoAdapter implements AdapterInterface
      */
     public function execute($sql)
     {
-        return $this->getConnection()->exec($sql);
+        if ($this->dryRun) {
+            $this->getOutput()->writeln($sql);
+            return;
+        }
+        else {
+            return $this->getConnection()->exec($sql);
+        }
     }
 
     /**
@@ -479,5 +490,26 @@ abstract class PdoAdapter implements AdapterInterface
      */
     public function isValidColumnType(Column $column) {
         return in_array($column->getType(), $this->getColumnTypes());
+    }
+
+    /**
+     * Enable Dry Run
+     *
+     * @return AdapterInterface
+     */
+    public function enableDryRun()
+    {
+        $this->dryRun = true;
+        return $this;
+    }
+    
+    /**
+     * Is Dry Run mode enabled?
+     *
+     * @return boolean
+     */
+    public function isDryRun()
+    {
+        return $this->dryRun;
     }
 }
